@@ -29,6 +29,9 @@ class SVMClassifier():
         self.coef = coef
         self.gamma = gamma
         
+        # initialize kernel
+        self.kernel = self.kernel(degree=self.degree, coef=self.coef, gamma=self.gamma)
+        
         # optimizer options
         self.max_iters = max_iters
         self.rel_tol = rel_tol
@@ -66,17 +69,7 @@ class SVMClassifier():
         # start creating the matrices
         n_samples, n_features = x.shape
         
-        # if self.kernel == 'linear':
-        #     K = linear(x)
-        # elif self.kernel == 'poly':
-        #     K = poly(x, coef=self.coef, degree=self.degree, gamma=self.gamma)
-        # elif self.kernel == 'rbf':
-        #     K = rbf(x, x, gamma=self.gamma)
-        # elif self.kernel == 'sigmoid':
-        #     K = sigmoid(x, coef=self.coef, gamma=self.gamma)
-        
-        self.kernel = self.kernel(power=self.degree, coef=self.coef, gamma=self.gamma)
-        
+        # Gram Matrix
         K = self.kernel(x, x)
         
         # create matrix of 1/2 H a aT
@@ -115,7 +108,7 @@ class SVMClassifier():
                    'feastol': self.feas_tol}
         
         sol = solvers.qp(self.P, self.q, self.G, self.h, self.A, self.b,
-                         options=options)
+                         options=options, kktsolver='ldl')
         
         alphas = np.array(sol["x"])
 
@@ -127,9 +120,8 @@ class SVMClassifier():
         self.supp_labels = y[self.S]
         self.supp_alphas = alphas[self.S]
         
-        # self.w = np.dot((self.supp * self.supp_labels).T, self.supp_alphas)
-        
-        # self.beta = np.mean(self.supp_labels - np.dot(self.supp, self.w))
+        if self.kernel.__name__ == 'linear':   
+            self.w = np.dot((self.supp * self.supp_labels).T, self.supp_alphas)
         
         self.beta = np.mean(self.supp_labels - np.sum(self.kernel(self.supp, self.supp)\
                             * self.supp_alphas * self.supp_labels, axis=0))
@@ -148,10 +140,7 @@ class SVMClassifier():
     def predict(self, x):
         if not isinstance(x, np.ndarray):
             raise TypeError("Array x is not a numpy ndarray !")
-        
-        # self.w = self.w.reshape((2))
-        
-        # results = np.sign(np.dot(self.w, x.T) + self.beta)
+       
         result = np.sum(self.kernel(self.supp, x) * self.supp_alphas * \
                             self.supp_labels, axis=0) + self.beta
         
