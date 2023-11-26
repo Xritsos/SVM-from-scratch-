@@ -15,7 +15,7 @@ def load_dataset():
     
     x, y = make_classification(n_samples=200, n_features=2, n_informative=2, 
                                 n_redundant=0, n_clusters_per_class=1, 
-                                flip_y=0, random_state=1, class_sep=0.3)
+                                flip_y=0, random_state=8, class_sep=0.3)
     
     
     y = np.expand_dims(y, axis=1) * 1.0
@@ -110,6 +110,9 @@ if __name__ == '__main__':
     # print()
     # print(f"Mine beta: {b}")
     # print(f"SKlearn beta: {b_sk}")
+    
+    # w = w_sk
+    # b = b_sk
     
     
     # x_min = -5
