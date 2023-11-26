@@ -15,7 +15,7 @@ def poly(coef=None, degree=None, gamma=None):
     if gamma <= 0.0:
         raise ValueError("gamma should be positive !")
         
-    def f(x1, x2):
+    def poly(x1, x2):
         
         dot = np.dot(x1, x2.T)
         dot = gamma * dot
@@ -24,7 +24,7 @@ def poly(coef=None, degree=None, gamma=None):
         
         return result
     
-    return f
+    return poly
 
 
 def rbf(gamma, **kwargs):
@@ -35,7 +35,7 @@ def rbf(gamma, **kwargs):
     if gamma <= 0.0:
         raise ValueError("gamma should be positive !")
     
-    def f(x1, x2):
+    def rbf(x1, x2):
         
         n = x1.shape[0]
         m = x2.shape[0]
@@ -47,18 +47,18 @@ def rbf(gamma, **kwargs):
         
         return result
     
-    return f
+    return rbf
 
 
 def linear(**kwargs):
     
-    def f(x1, x2):
+    def linear(x1, x2):
         
         result = np.dot(x1, x2.T)
     
         return result
     
-    return f
+    return linear
 
 
 def sigmoid(coef=None, gamma=None, **kwargs):
@@ -72,7 +72,7 @@ def sigmoid(coef=None, gamma=None, **kwargs):
     if gamma <= 0.0:
         raise ValueError("gamma should be positive !")
         
-    def f(x1, x2):
+    def sigmoid(x1, x2):
 
         result = np.dot(x1, x2.T)
         result *= gamma 
@@ -82,4 +82,4 @@ def sigmoid(coef=None, gamma=None, **kwargs):
         
         return result
     
-    return f
+    return sigmoid
