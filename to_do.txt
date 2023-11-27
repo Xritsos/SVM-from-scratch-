@@ -1,18 +1,20 @@
-1) Read about kernel trick and write down the final equation(s) using the kernel
+(Done) 1) Test it on a real dataset and compare with sklearn (see if can manage n features)
+
+2) Read about kernel trick and write down the final equation(s) using the kernel
 trick. 
 
-2) Read about each kernel and take notes.
+3) Read about each kernel and take notes.
 
-3) why choose ||w.T * x - b|| = 1
+4) why choose ||w.T * x - b|| = 1
 
-4) Re-read about SVMs and find questions
+5) Re-read about SVMs and find questions
 
-5) Read what is being asked in the assignment
+6) Read what is being asked in the assignment
 
-6) Find dataset
+7) Find dataset
 
-7) Find IEEE LateX template
+8) Find IEEE LateX template
 
-8) Research on the dataset
+9) Research on the dataset
 
-9) Write report
+10) Write report
