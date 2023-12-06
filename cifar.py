@@ -81,7 +81,7 @@ def get_data(path):
     return new_data, new_labels
 
 
-def preprocess(x_train, x_test, y_train, y_test, class_id):
+def preprocess(y_train, y_test, class_id):
     # the targer class each time will be assigned to 1
     y_train[y_train==class_id] = 1
     y_train[y_train!=1] = -1
@@ -99,16 +99,8 @@ def preprocess(x_train, x_test, y_train, y_test, class_id):
     print()
     print(f"Test labels: {np.unique(y_test)}")
     
-    print()
-    print("Scaling")
     
-    scaler = MinMaxScaler()
-    scaler.fit(x_train)
-    
-    x_train = scaler.transform(x_train)
-    x_test = scaler.transform(x_test)
-    
-    return x_train, x_test, y_train, y_test
+    return y_train, y_test
 
 
 def subsample(x_train, x_test, y_train, y_test, class_id):
@@ -236,8 +228,8 @@ def horse_classifier(C, kernel, gamma, degree, coef, rel_tol, feas_tol):
     # also create class balance for the 'one vs all'
     x_train, x_test, y_train, y_test = subsample(x_train, x_test, y_train, y_test, 7)
     
-    plot_balance(y_train)
-    plot_balance(y_test)
+    # plot_balance(y_train)
+    # plot_balance(y_test)
     
     
     x_train, x_test, y_train, y_test = preprocess(x_train, x_test, y_train, y_test, 7)
@@ -275,8 +267,8 @@ def cat_classifier(C, kernel, gamma, degree, coef, rel_tol, feas_tol):
     # also create class balance for the 'one vs all'
     x_train, x_test, y_train, y_test = subsample(x_train, x_test, y_train, y_test, 3)
     
-    plot_balance(y_train)
-    plot_balance(y_test)
+    # plot_balance(y_train)
+    # plot_balance(y_test)
     
     x_train, x_test, y_train, y_test = preprocess(x_train, x_test, y_train, y_test, 3)
     
@@ -299,53 +291,158 @@ def cat_classifier(C, kernel, gamma, degree, coef, rel_tol, feas_tol):
     
     
     return clf, f1_mine, prec_mine, rec_mine
+
+
+def combine():
+    path_train = './datasets/cifar/data_batch_5'
+    path_test = './datasets/cifar/data_batch_4'
     
+    x_train, y_train = get_data(path_train)
+    x_test, y_test = get_data(path_test)
+    
+    scaler = StandardScaler()
+    scaler.fit(x_train)
+    
+    x_train = scaler.transform(x_train)
+    x_test = scaler.transform(x_test)
+    
+    print()
+    print(f"X train: {x_train.shape}")
+    print(f"X test: {x_test.shape}")
+    
+    x_train_d, x_test_d, y_train_d, y_test_d = subsample(x_train, x_test, 
+                                                         y_train, y_test, 4)
+    
+    x_train_h, x_test_h, y_train_h, y_test_h = subsample(x_train, x_test,
+                                                         y_train, y_test, 7)
+    
+    x_train_c, x_test_c, y_train_c, y_test_c = subsample(x_train, x_test, 
+                                                         y_train, y_test, 3)
+    
+    y_train_d, y_test_d = preprocess(y_train_d, y_test_d, 4)
+    
+    y_train_h, y_test_h = preprocess(y_train_h, y_test_h, 7)
+    
+    y_train_c, y_test_c = preprocess(y_train_c, y_test_c, 3)
+    
+    print()
+    print("Deer Classifier")
+    print(x_train_d.shape, x_test_d.shape)
+    
+    print()
+    print("Horse Classifier")
+    print(x_train_h.shape, x_test_h.shape)
+    
+    print()
+    print("Cat Classifier")
+    print(x_train_c.shape, x_test_c.shape)
+    
+    clf_deer = SVMClassifier(C=100, kernel=rbf, gamma=0.001, degree=1, coef=0,
+                            rel_tol=1e-6, feas_tol=1e-7)
+    
+    clf_deer.fit(x_train_d, np.expand_dims(y_train_d, axis=1))
+    
+    
+    clf_horse = SVMClassifier(C=100, kernel=rbf, gamma=0.0007, degree=1, coef=0,
+                            rel_tol=1e-6, feas_tol=1e-7)
+    
+    clf_horse.fit(x_train_h, np.expand_dims(y_train_h, axis=1))
+    
+    
+    clf_cat = SVMClassifier(C=110, kernel=rbf, gamma=0.001, degree=1, coef=0,
+                            rel_tol=1e-6, feas_tol=1e-7)
+    
+    clf_cat.fit(x_train_c, np.expand_dims(y_train_c, axis=1))
+    
+    # test each individual scores
+    
+    y_pred_deer = clf_deer.predict(x_test_d)
+    y_pred_horse = clf_horse.predict(x_test_h)
+    y_pred_cat = clf_cat.predict(x_test_c)
+    
+    np.nan_to_num(y_pred_deer, copy=False, nan=0.0)
+    np.nan_to_num(y_pred_horse, copy=False, nan=0.0)
+    np.nan_to_num(y_pred_cat, copy=False, nan=0.0)
+    
+    f1_deer = f1_score(y_test_d, y_pred_deer, average='macro')
+    prec_deer = precision_score(y_test_d, y_pred_deer, average='macro')
+    rec_deer = recall_score(y_test_d, y_pred_deer, average='macro')
+    
+    f1_horse = f1_score(y_test_h, y_pred_horse, average='macro')
+    prec_horse = precision_score(y_test_h, y_pred_horse, average='macro')
+    rec_horse = recall_score(y_test_h, y_pred_horse, average='macro')
+    
+    f1_cat = f1_score(y_test_c, y_pred_cat, average='macro')
+    prec_cat = precision_score(y_test_c, y_pred_cat, average='macro')
+    rec_cat = recall_score(y_test_c, y_pred_cat, average='macro')
+    
+    
+    f1 = [f1_deer, f1_horse, f1_cat]
+    classifiers = [4, 7, 3]
+    
+    
+    print()
+    print("======== Deer Classifier ========")
+    print(f"F1: {f1_deer}")
+    print(f"Precision: {prec_deer}")
+    print(f"Recall: {rec_deer}")
+    print("=================================")
+    
+    print()
+    print("======== Horse Classifier ========")
+    print(f"F1: {f1_horse}")
+    print(f"Precision: {prec_horse}")
+    print(f"Recall: {rec_horse}")
+    print("=================================")
+    
+    print()
+    print("======== Cat Classifier ========")
+    print(f"F1: {f1_cat}")
+    print(f"Precision: {prec_cat}")
+    print(f"Recall: {rec_cat}")
+    print("=================================")
+    
+    
+    # Combine and test them in whole
+    
+    # plot_balance(y_train)
+    
+    result = np.zeros((y_test.shape))
+    
+    deer_pred = clf_deer.predict(x_test)
+    horse_pred = clf_horse.predict(x_test)
+    cat_pred = clf_cat.predict(x_test)
+    
+    for i in range(result.shape[0]):
+        
+        if deer_pred[i] == 1 and horse_pred[i] == 1:
+            index = f1.index(max(f1[0], f1[1]))
+            result[i] = classifiers[index]
+        elif deer_pred[i] == 1 and cat_pred[i] == 1:
+            index = f1.index(max(f1[0], f1[2]))
+            result[i] = classifiers[index]
+        elif cat_pred[i] == 1 and horse_pred[i] == 1:
+            index = f1.index(max(f1[1], f1[2]))
+            result[i] = classifiers[index]
+        elif deer_pred[i] == 1:
+            result[i] = 4
+        elif horse_pred[i] == 1:
+            result[i] = 7
+        elif cat_pred[i] == 1:
+            result[i] = 3
+        else:
+            index = f1.index(min(f1))
+            result[i] = classifiers[index]
+            
+    print()
+    print(f"Results: {np.unique(result)}")
+        
+    # final scores
+    print()
+    print(classification_report(y_test, result))
     
     
 if __name__ == '__main__':
     
-    c = [90, 100, 110]
-    # gamma = [0.02, 0.03, 0.04]
-    coef = [1, 2, 4, 6]
-    degree = [7, 8, 10, 15, 20]
-    
-    f1 = []
-    precision = []
-    recall = []
-    params = []
-       
-    for cf in coef:
-        for C in c:
-            for d in degree:
-                
-                print()
-                print("============= Params ==============")
-                print(f"C = {C}, degree = {d}, coef = {cf}")
-                print("===================================")
-                print()
-
-                clf, f, pre, re = deer_classifier(C=C, kernel=poly, gamma=1, 
-                                                  degree=d, coef=cf, 
-                                                  rel_tol=1e-6, feas_tol=1e-7)
-                
-                print()
-                print("============= Scores ==============")
-                print(f"F1 = {f}, Prec = {pre}, Rec = {re}")
-                print("===================================")
-                print()
-                
-                f1.append(f)
-                precision.append(pre)
-                recall.append(re)
-                params.append(('poly', C, d, cf))
-                
-            
-    print()
-    print(f"Max F1 score: {max(f1)}")    
-    index = f1.index(max(f1))
-
-    print()
-    print(f"Parameters: {params[index]}")
-    print(f"Precision: {precision[index]}")
-    print(f"Recall: {recall[index]}")
-     
+    combine()
+   
