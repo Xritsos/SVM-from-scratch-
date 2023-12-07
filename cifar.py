@@ -294,10 +294,23 @@ def cat_classifier(C, kernel, gamma, degree, coef, rel_tol, feas_tol):
 
 
 def combine():
-    path_train = './datasets/cifar/data_batch_5'
-    path_test = './datasets/cifar/data_batch_4'
+    path_train_5 = './datasets/cifar/data_batch_5'
+    path_train_4 = './datasets/cifar/data_batch_4'
+    path_train_3 = './datasets/cifar/data_batch_3'
+    path_train_2 = './datasets/cifar/data_batch_2'
+    # path_train_1 = './datasets/cifar/data_batch_1'
+    path_test = './datasets/cifar/test_batch'
     
-    x_train, y_train = get_data(path_train)
+    x_train_5, y_train_5 = get_data(path_train_5)
+    x_train_4, y_train_4 = get_data(path_train_4)
+    x_train_3, y_train_3 = get_data(path_train_3)
+    x_train_2, y_train_2 = get_data(path_train_2)
+    # x_train_1, y_train_1 = get_data(path_train_1)
+    
+    x_train = np.concatenate((x_train_5, x_train_4, x_train_3, x_train_2))
+    y_train = np.concatenate((y_train_5, y_train_4, y_train_3, y_train_2))
+    
+    # x_train, y_train = get_data(path_train_5)
     x_test, y_test = get_data(path_test)
     
     scaler = StandardScaler()
@@ -349,7 +362,7 @@ def combine():
     clf_horse.fit(x_train_h, np.expand_dims(y_train_h, axis=1))
     
     
-    clf_cat = SVMClassifier(C=110, kernel=rbf, gamma=0.001, degree=1, coef=0,
+    clf_cat = SVMClassifier(C=100, kernel=rbf, gamma=0.0007, degree=1, coef=0,
                             rel_tol=1e-6, feas_tol=1e-7)
     
     clf_cat.fit(x_train_c, np.expand_dims(y_train_c, axis=1))
@@ -413,26 +426,39 @@ def combine():
     horse_pred = clf_horse.predict(x_test)
     cat_pred = clf_cat.predict(x_test)
     
+    deer_pred[deer_pred==1] = 4
+    horse_pred[horse_pred==1] = 7
+    cat_pred[cat_pred==1] = 3
+    
+   
+    result = deer_pred + horse_pred + cat_pred
+    result[result==2] = 4
+    result[result==5] = 7
+    result[result==1] = 3
+    
     for i in range(result.shape[0]):
         
-        if deer_pred[i] == 1 and horse_pred[i] == 1:
+        if result[i] == 10:
+            # deer - horse prediction
             index = f1.index(max(f1[0], f1[1]))
             result[i] = classifiers[index]
-        elif deer_pred[i] == 1 and cat_pred[i] == 1:
-            index = f1.index(max(f1[0], f1[2]))
-            result[i] = classifiers[index]
-        elif cat_pred[i] == 1 and horse_pred[i] == 1:
+        elif result[i] == 9:
+            # cat - horse
             index = f1.index(max(f1[1], f1[2]))
             result[i] = classifiers[index]
-        elif deer_pred[i] == 1:
-            result[i] = 4
-        elif horse_pred[i] == 1:
-            result[i] = 7
-        elif cat_pred[i] == 1:
-            result[i] = 3
-        else:
+        elif result[i] == 6:
+            # deer - cat
+            index = f1.index(max(f1[0], f1[2]))
+            result[i] = classifiers[index]
+        elif result[i] == 14:
+            # predict all three
+            index = f1.index(max(f1))
+            result[i] = classifiers[index]
+        elif result[i] == -3:
+            # no one predicts
             index = f1.index(min(f1))
             result[i] = classifiers[index]
+        
             
     print()
     print(f"Results: {np.unique(result)}")
