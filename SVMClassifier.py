@@ -113,7 +113,7 @@ class SVMClassifier():
         alphas = np.array(sol["x"])
 
         # hyperplane solution
-        self.S = ((alphas > 1e-5) & (alphas <= self.C)).flatten()
+        self.S = ((alphas > 1e-5) & (alphas < self.C)).flatten()
         
         # support vectors
         self.supp = x[self.S]
