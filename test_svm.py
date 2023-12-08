@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.svm import SVC
+from sklearn.metrics import classification_report
 
 
 from SVMClassifier import SVMClassifier
@@ -21,13 +22,13 @@ def load_dataset():
                                 flip_y=0, random_state=8, class_sep=0.3)
     
     
-    # y = np.expand_dims(y, axis=1) * 1.0
-    # y[y==0] = -1.0
+    y = np.expand_dims(y, axis=1) * 1.0
+    y[y==0] = -1.0
     
-    # vals, counts = np.unique(y, return_counts=True)
+    vals, counts = np.unique(y, return_counts=True)
     
-    # print()
-    # print(f"Classes: {counts}")
+    print()
+    print(f"Classes: {counts}")
    
     # fig = plt.figure()
    
@@ -35,24 +36,24 @@ def load_dataset():
    
     # plt.show()
     
-    df = pd.read_csv('./data.csv')
+    # df = pd.read_csv('./data.csv')
     
-    df.dropna()
+    # df.dropna()
     
-    y_ = df['diagnosis'].to_numpy()
+    # y_ = df['diagnosis'].to_numpy()
     
     
-    y = np.zeros((y_.shape), dtype=np.float64)
-    y[y_=='M'] = 1.0
-    y[y_=='B'] = - 1.0
+    # y = np.zeros((y_.shape), dtype=np.float64)
+    # y[y_=='M'] = 1.0
+    # y[y_=='B'] = - 1.0
     
-    y = y.reshape((y.shape[0], 1))
+    # y = y.reshape((y.shape[0], 1))
     
-    df = df.drop(columns=['diagnosis'])
+    # df = df.drop(columns=['diagnosis'])
     
-    x = df.to_numpy()
+    # x = df.to_numpy()
    
-    return x[:, :31], y
+    return x, y
 
 
 if __name__ == '__main__':
@@ -62,79 +63,81 @@ if __name__ == '__main__':
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, 
                                                         random_state=1)
     
-    scaler = MinMaxScaler()
-    scaler.fit(x_train)
+    # scaler = MinMaxScaler()
+    # scaler.fit(x_train)
     
-    x_train = scaler.transform(x_train)
-    x_test = scaler.transform(x_test)
+    # x_train = scaler.transform(x_train)
+    # x_test = scaler.transform(x_test)
     
-    print()
-    print(f"x train shape: {x_train.shape}")
-    print(f"y train shape: {y_train.shape}")
+    # print()
+    # print(f"x train shape: {x_train.shape}")
+    # print(f"y train shape: {y_train.shape}")
     
-    print()
-    print(f"x train dtype: {x_train.dtype}")
-    print(f"y train dtype: {y_train.dtype}")
+    # print()
+    # print(f"x train dtype: {x_train.dtype}")
+    # print(f"y train dtype: {y_train.dtype}")
     
-    print()
-    print(f"x test shape: {x_test.shape}")
-    print(f"y test shape: {y_test.shape}")
+    # print()
+    # print(f"x test shape: {x_test.shape}")
+    # print(f"y test shape: {y_test.shape}")
     
-    print()
-    print(f"x test dtype: {x_test.dtype}")
-    print(f"y test dtype: {y_test.dtype}")
+    # print()
+    # print(f"x test dtype: {x_test.dtype}")
+    # print(f"y test dtype: {y_test.dtype}")
     
-    print()
-    print(f"Train labels {np.unique(y_train)}")
-    print(f"Test labels {np.unique(y_test)}")
+    # print()
+    # print(f"Train labels {np.unique(y_train)}")
+    # print(f"Test labels {np.unique(y_test)}")
     
     
-    c = [i*1.0 for i in range(1, 10, 1)]
-    kernels = [rbf]
-    # deg = [2, 4]
-    gamma = [0.11, 0.12]
-    # coeff = [0.0, 1.0, 2.0]
+    # c = [i*1.0 for i in range(1, 10, 1)]
+    # kernels = [rbf]
+    # # deg = [2, 4]
+    # gamma = [0.11, 0.12]
+    # # coeff = [0.0, 1.0, 2.0]
     
-    parameters = []
-    score = []
+    # parameters = []
+    # score = []
     
-    for k in kernels:
-        for C in c:
-            for g in gamma:      
-                print()
-                print("Parameters:")
-                print(f"Kernel: {k.__name__}")
-                # print(f"Degree: {d}")
-                print(f"C: {C}")
-                # print(f"Gamma: {g}")
-                # print(f"Coef: {coe}")
-                print()
+    # for k in kernels:
+    #     for C in c:
+    #         for g in gamma:      
+    #             print()
+    #             print("Parameters:")
+    #             print(f"Kernel: {k.__name__}")
+    #             # print(f"Degree: {d}")
+    #             print(f"C: {C}")
+    #             # print(f"Gamma: {g}")
+    #             # print(f"Coef: {coe}")
+    #             print()
                 
-                clf = SVMClassifier(C=C, kernel=k, gamma=g, rel_tol=1e-1, feas_tol=1e-1)
+    #             clf = SVMClassifier(C=C, kernel=k, gamma=g, rel_tol=1e-1, feas_tol=1e-1)
                 
-                clf.fit(x_train, y_train)
+    #             clf.fit(x_train, y_train)
                 
-                result = clf.predict(x_test)
+    #             result = clf.predict(x_test)
                 
-                acc = accuracy_score(y_test, result)
+    #             acc = accuracy_score(y_test, result)
                 
-                parameters.append((k.__name__, C, g))
-                score.append(acc)
+    #             parameters.append((k.__name__, C, g))
+    #             score.append(acc)
                             
     
-    print(max(score))    
-    index = score.index(max(score))
+    # print(max(score))    
+    # index = score.index(max(score))
     
-    print(parameters[index])
-    print(score[index])
+    # print(parameters[index])
+    # print(score[index])
     
     # custom classifier
-    # clf = SVMClassifier(C=1, kernel=rbf, degree=2, gamma=1.0, coef=1.0,
-    #                     max_iters=100, rel_tol=100, feas_tol=100)
+    clf = SVMClassifier(C=1, kernel=rbf, degree=2, gamma=1.0, coef=1.0,
+                        max_iters=100, rel_tol=1e-6, feas_tol=1e-7)
     
-    # clf.fit(x_train, y_train)
+    clf.fit(x_train, y_train)
     
-    # result = clf.predict(x_test)
+    result = clf.predict(x_test)
+    
+    print(classification_report(y_test, result))
     
     # print()
     # print(f"Mine Result shape: {result.shape}")
@@ -143,11 +146,14 @@ if __name__ == '__main__':
 
     
     # sklearn classifier
-    sk_clf = SVC(C=1.0, kernel='rbf', gamma=0.2)
+    sk_clf = SVC(C=1.0, kernel='rbf', gamma=1)
     
     sk_clf.fit(x_train, np.ravel(y_train))
     
     result_sklearn = sk_clf.predict(x_test)
+    
+    print()
+    print(classification_report(y_test, result_sklearn))
     
     # # # print()
     # # # print(f"Sklearn Result shape: {result_sklearn.shape}")
