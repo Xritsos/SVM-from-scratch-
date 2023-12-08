@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.metrics import classification_report, f1_score, precision_score, recall_score
 from sklearn.svm import SVC
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 from SVMClassifier import SVMClassifier
 from kernels import poly, linear, rbf, sigmoid
@@ -418,7 +419,8 @@ def combine():
     
     # Combine and test them in whole
     
-    # plot_balance(y_train)
+    plot_balance(y_train)
+    plot_balance(y_test)
     
     result = np.zeros((y_test.shape))
     
@@ -466,6 +468,15 @@ def combine():
     # final scores
     print()
     print(classification_report(y_test, result))
+    
+    cm = confusion_matrix(y_test, result, labels=[3, 4, 7])
+    
+    disp = ConfusionMatrixDisplay(cm, display_labels=['cat', 'deer', 'horse'])
+    
+    disp.plot()
+    
+    plt.show()
+    
     
     
 if __name__ == '__main__':
