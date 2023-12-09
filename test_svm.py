@@ -17,18 +17,18 @@ from kernels import poly, linear, rbf, sigmoid
 
 def load_dataset():
     
-    x, y = make_classification(n_samples=200, n_features=5, n_informative=2, 
-                                n_redundant=0, n_clusters_per_class=1, 
-                                flip_y=0, random_state=8, class_sep=0.3)
+    # x, y = make_classification(n_samples=200, n_features=5, n_informative=2, 
+    #                             n_redundant=0, n_clusters_per_class=1, 
+    #                             flip_y=0, random_state=8, class_sep=0.3)
     
     
-    y = np.expand_dims(y, axis=1) * 1.0
-    y[y==0] = -1.0
+    # y = np.expand_dims(y, axis=1) * 1.0
+    # y[y==0] = -1.0
     
-    vals, counts = np.unique(y, return_counts=True)
+    # vals, counts = np.unique(y, return_counts=True)
     
-    print()
-    print(f"Classes: {counts}")
+    # print()
+    # print(f"Classes: {counts}")
    
     # fig = plt.figure()
    
@@ -36,22 +36,22 @@ def load_dataset():
    
     # plt.show()
     
-    # df = pd.read_csv('./data.csv')
+    df = pd.read_csv('./data.csv')
     
-    # df.dropna()
+    df.dropna()
     
-    # y_ = df['diagnosis'].to_numpy()
+    y_ = df['diagnosis'].to_numpy()
     
     
-    # y = np.zeros((y_.shape), dtype=np.float64)
-    # y[y_=='M'] = 1.0
-    # y[y_=='B'] = - 1.0
+    y = np.zeros((y_.shape), dtype=np.float64)
+    y[y_=='M'] = 1.0
+    y[y_=='B'] = - 1.0
     
-    # y = y.reshape((y.shape[0], 1))
+    y = np.expand_dims(y, axis=1) * 1.0
     
-    # df = df.drop(columns=['diagnosis'])
+    df = df.drop(columns=['diagnosis'])
     
-    # x = df.to_numpy()
+    x = df.to_numpy()
    
     return x, y
 
@@ -69,16 +69,16 @@ if __name__ == '__main__':
     # x_train = scaler.transform(x_train)
     # x_test = scaler.transform(x_test)
     
-    # print()
-    # print(f"x train shape: {x_train.shape}")
+    print()
+    print(f"x train shape: {x_train.shape}")
     # print(f"y train shape: {y_train.shape}")
     
     # print()
     # print(f"x train dtype: {x_train.dtype}")
     # print(f"y train dtype: {y_train.dtype}")
     
-    # print()
-    # print(f"x test shape: {x_test.shape}")
+    print()
+    print(f"x test shape: {x_test.shape}")
     # print(f"y test shape: {y_test.shape}")
     
     # print()
@@ -131,7 +131,7 @@ if __name__ == '__main__':
     
     # custom classifier
     clf = SVMClassifier(C=1, kernel=rbf, degree=2, gamma=1.0, coef=1.0,
-                        max_iters=100, rel_tol=1e-6, feas_tol=1e-7)
+                        max_iters=1000, rel_tol=1e-6, feas_tol=1e-7)
     
     clf.fit(x_train, y_train)
     
