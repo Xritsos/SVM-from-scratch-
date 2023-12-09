@@ -357,13 +357,13 @@ def combine():
     clf_deer.fit(x_train_d, np.expand_dims(y_train_d, axis=1))
     
     
-    clf_horse = SVMClassifier(C=100, kernel=rbf, gamma=0.0007, degree=1, coef=0,
+    clf_horse = SVMClassifier(C=100, kernel=rbf, gamma=0.0005, degree=1, coef=0,
                             rel_tol=1e-6, feas_tol=1e-7)
     
     clf_horse.fit(x_train_h, np.expand_dims(y_train_h, axis=1))
     
     
-    clf_cat = SVMClassifier(C=100, kernel=rbf, gamma=0.0007, degree=1, coef=0,
+    clf_cat = SVMClassifier(C=100, kernel=rbf, gamma=0.0005, degree=1, coef=0,
                             rel_tol=1e-6, feas_tol=1e-7)
     
     clf_cat.fit(x_train_c, np.expand_dims(y_train_c, axis=1))
