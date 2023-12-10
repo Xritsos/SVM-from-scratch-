@@ -1,14 +1,13 @@
 import numpy as np
 
 
-def poly(coef=None, degree=None, gamma=None):
+def poly(coef=None, degree=None, **kwargs):
     
     if coef == None:
         coef = 1.0
             
     if degree == None:
         degree = 1
-            
         
     def poly(x1, x2):
         
