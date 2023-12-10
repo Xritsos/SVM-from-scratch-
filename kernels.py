@@ -9,16 +9,10 @@ def poly(coef=None, degree=None, gamma=None):
     if degree == None:
         degree = 1
             
-    if gamma == None:
-        gamma = 1.0
-            
-    if gamma <= 0.0:
-        raise ValueError("gamma should be positive !")
         
     def poly(x1, x2):
         
         dot = np.dot(x1, x2.T)
-        dot = gamma * dot
         
         result = np.power(dot + coef, degree)
         
