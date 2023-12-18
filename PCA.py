@@ -41,6 +41,13 @@ class PCA_SVD():
         return x_transformed
 
 
+    def explained_var(self):
+        
+        total_variance = np.sum(self.eigen_values)
+        
+        n_variance = [i/total_variance for i in self.eigen_values[:self.n_comp]]
+        
+        return n_variance
 
 
 
@@ -49,27 +56,6 @@ def unpickle(file):
     with open(file, 'rb') as fo:
         dict = pickle.load(fo, encoding='bytes')
     return dict
-
-
-def pca(x, n_components):
-    n = x.shape[0]
-    
-    mean = np.mean(x, axis=0)
-    
-    x = x - mean
-    
-    u, sigma, v_trans = linalg.svd(x, full_matrices=False)
-    
-    eigen_values = sigma**2 / (n-1)
-    
-    idxs = np.argsort(eigen_values)[::-1]
-    
-    eigen_values = eigen_values[idxs]
-    eigen_vectors = v_trans.T[:, idxs]
-    
-    x_transformed = np.dot(x, eigen_vectors[:, :n_components])
-    
-    return x_transformed
 
 
 if __name__ == '__main__':
@@ -87,7 +73,13 @@ if __name__ == '__main__':
     pca_sk = PCA(3)
     d_new = pca_sk.fit_transform(temp)
     
-    print(x_new[:5, 2])
+    # print(x_new[:5, 2])
+    # print()
+    # print(d_new[:5, 2])
+    
+    var = my_pca.explained_var()
+    
     print()
-    print(d_new[:5, 2])
+    print(f"My explained variance: {np.sum(var)}")
+    print(f"SKlearn's explained variance: {np.sum(pca_sk.explained_variance_ratio_)}")
     
