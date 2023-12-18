@@ -15,7 +15,13 @@ class PCA_SVD():
         
         
     def fit(self, x):
-        n = x.shape[0]
+        n, f = x.shape
+        
+        min_dim = min(n, f)
+        
+        if self.n_comp > min_dim:
+            raise ValueError("Number of components should be less or equal to" \
+                f"the min dimension! That is: {min_dim} !")
         
         self.mean = np.mean(x, axis=0)
         
