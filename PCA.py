@@ -29,14 +29,11 @@ class PCA_SVD():
         
         u, sigma, v_trans = linalg.svd(x, full_matrices=False)
         
+        # the values of the sigma matrix are already in descending order
+        # so our eigenvalues do not need sorting 
+        
         self.eigen_values = sigma ** 2 / (n - 1)
         self.eigen_vectors = v_trans.T
-        
-        # sort based on max variance (max eigen_values)
-        idxs = np.argsort(self.eigen_values)[::-1]
-        
-        self.eigen_values = self.eigen_values[idxs]
-        self.eigen_vectors = self.eigen_vectors[:, idxs]
 
 
     def transform(self, x):
@@ -79,9 +76,9 @@ if __name__ == '__main__':
     pca_sk = PCA(3)
     d_new = pca_sk.fit_transform(temp)
     
-    # print(x_new[:5, 2])
-    # print()
-    # print(d_new[:5, 2])
+    print(x_new[:5, 2])
+    print()
+    print(d_new[:5, 2])
     
     var = my_pca.explained_var()
     
