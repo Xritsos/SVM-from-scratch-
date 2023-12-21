@@ -46,6 +46,11 @@ class LDA():
             S_B += np.dot((x_c_mean - total_mean), (x_c_mean - total_mean).T) * n_c
         
         # solve the general eigenvalue problem
+        I = np.identity((S_W.shape[0]))
+        
+        # remember to change it if needed
+        S_W += 1e-5 * I
+        
         self.eigen_values, self.eigen_vectors = eigh(S_B, S_W)
         self.eigen_vectors = self.eigen_vectors.T
         
