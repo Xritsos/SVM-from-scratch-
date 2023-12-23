@@ -30,7 +30,7 @@ class PCA_SVD():
         # the values of the sigma matrix are already in descending order
         # so our eigenvalues do not need sorting 
         
-        self.eigen_values = sigma ** 2
+        self.eigen_values = sigma ** 2 / n
         
         # the values of sigma are the eigenvalues for the A.T A matrix
         # we need the eigenvalues for the A matrix
