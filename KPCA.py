@@ -4,7 +4,7 @@ from numpy import linalg
 from PCA import PCA_SVD
 
 
-class KPCA_SVD():
+class KPCA():
     
     def __init__(self, n_components, kernel, degree=None, coef=None, gamma=None):
         self.n_comp = n_components
@@ -66,7 +66,7 @@ class KPCA_SVD():
             x_transformed = np.dot(x, self.eigen_vectors[:, :self.n_comp])
         else:
             self.K = self.kernel(x, self.X_fit)
-            
+            print(f"K matrix: {self.K.shape}")
             x_transformed = np.dot(self.K, self.eigen_vectors[:, :self.n_comp])
         
         return x_transformed
