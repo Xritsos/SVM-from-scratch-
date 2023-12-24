@@ -18,8 +18,15 @@ class LDA():
         if self.n_comp > (len(classes) - 1):
             raise ValueError(f"Number of components must be max number of classes - 1")
     
-        # calculate the mean of all samples
-        total_mean = np.mean(x, axis=0)
+        # calculate the weighted mean of all classes
+        sum_all_c = 0
+        for i in classes:
+            x_i = x[y==i]
+            n_i = x_i.shape[0]
+            
+            sum_all_c += n_i * np.mean(x_i, axis=0)
+            
+        total_mean = sum_all_c / n_samples
         total_mean = np.expand_dims(total_mean, axis=1)
     
         # initialize within and between classes matrices
