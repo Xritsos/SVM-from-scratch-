@@ -66,7 +66,6 @@ class KPCA():
             x_transformed = np.dot(x, self.eigen_vectors[:, :self.n_comp])
         else:
             self.K = self.kernel(x, self.X_fit)
-            print(f"K matrix: {self.K.shape}")
             x_transformed = np.dot(self.K, self.eigen_vectors[:, :self.n_comp])
         
         return x_transformed
