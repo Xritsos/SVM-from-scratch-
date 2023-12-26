@@ -48,17 +48,17 @@ class KPCA():
             I = np.ones((self.K.shape))
         
             # center Gram Matrix
-            self.K = self.K - (1/n_samples) * np.dot(I, self.K) - (1/n_samples) * \
-                        np.dot(self.K, I) + (1/n_samples**2) * np.dot(np.dot(I, self.K), I)
+            self.K = self.K - np.dot(1/n_samples) * I, self.K) - 
+                              np.dot(self.K, (1/n_samples) * I) + 
+                              np.dot(np.dot((1/n_samples) * I, self.K), (1/n_samples) *I)
             
             # eigen decomposition
             self.eigen_values, self.eigen_vectors = linalg.eigh(self.K)
         
             idxs = np.argsort(self.eigen_values)[::-1]
             
-            self.eigen_values[idxs]
-            self.eigen_vectors[:, idxs]
-        
+            self.eigen_values = self.eigen_values[idxs]
+            self.eigen_vectors = self.eigen_vectors[:, idxs]
         
     def transform(self, x):
         if self.kernel.__name__ == 'linear':
