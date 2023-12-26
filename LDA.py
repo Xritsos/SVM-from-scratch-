@@ -69,12 +69,3 @@ class LDA():
         
         return x_transformed
     
-    
-    def explained_var(self):
-        
-        total_variance = np.sum(self.eigen_values)
-        
-        n_variance = [i/total_variance for i in self.eigen_values[:self.n_comp]]
-        
-        return n_variance
-    
