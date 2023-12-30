@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import linalg
 
-from PCA import PCA_SVD
+from dim_reduction.PCA import PCA_SVD
 
 
 class KPCA():
