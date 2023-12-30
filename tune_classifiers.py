@@ -1,246 +1,203 @@
+import numpy as np
+import time
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.metrics import f1_score, precision_score, recall_score
+from matplotlib import pyplot as plt
+
+from data_modules import load
+from ploting import plot
+from SVM.SVMClassifier import SVMClassifier
+from SVM.kernels import linear, rbf, poly, sigmoid
+from dim_reduction.KPCA import KPCA
+from dim_reduction.LDA import LDA
 
 
-
-
-
-def unpickle(file):
-    with open(file, 'rb') as fo:
-        dict = pickle.load(fo, encoding='bytes')
-    return dict
-
-
-def get_data(path):
-    
-    batch = unpickle(path)
-    
-    data = batch[b'data']
-    labels = np.asarray(batch[b'labels'])
-
-    # we choose only the classes deer horse and cat
-    # deer --> 4, horse --> 7, cat --> 3
-    
-    deer = data[labels==4, :]
-    horse = data[labels==7, :]
-    cat = data[labels==3, :]
-    
-    new_data = np.concatenate((deer, horse, cat))
-    
-    deer_lb = labels[labels==4]
-    horse_lb = labels[labels==7]
-    cat_lb = labels[labels==3]
-    
-    new_labels = np.concatenate((deer_lb, horse_lb, cat_lb))
-    
-    return new_data, new_labels
-
-
-def preprocess(y_train, y_test, class_id):
-    # the targer class each time will be assigned to 1
-    y_train[y_train==class_id] = 1
-    y_train[y_train!=1] = -1
-    
-    y_train = y_train.astype(np.float64)
-    
-    print()
-    print(f"Train labels: {np.unique(y_train)}")
-    
-    y_test[y_test==class_id] = 1
-    y_test[y_test!=1] = -1
-    
-    y_test = y_test.astype(np.float64)
-    
-    print()
-    print(f"Test labels: {np.unique(y_test)}")
-    
-    
-    return y_train, y_test
-
-
-def subsample(x_train, x_test, y_train, y_test, class_id):
-    classes = [3, 4, 7]
-    classes.remove(class_id)
-    
-    target_tr = y_train==class_id
-    target_te = y_test==class_id
-    
-    max_sample_tr = math.floor(x_train[target_tr, :].shape[0] / 2)
-    max_sample_te = math.floor(x_test[target_te, :].shape[0] / 2)
-    
-    other_1_tr = y_train==classes[0]
-    other_2_tr = y_train==classes[1]
-    
-    other_1_te = y_test==classes[0]
-    other_2_te = y_test==classes[1]
-    
-    x_train_class = x_train[target_tr, :]
-    x_test_class = x_test[target_te, :]
-    y_train_class = y_train[target_tr]
-    y_test_class = y_test[target_te]
-    
-    # train
-    x_train_other_1 = x_train[other_1_tr, :]
-    y_train_other_1 = y_train[other_1_tr]
-    
-    rand = np.random.randint(0, x_train_other_1.shape[0], max_sample_tr)
-    
-    x_train_other_1 = x_train_other_1[rand, :]
-    y_train_other_1 = y_train_other_1[rand]
-    
-    x_train_other_2 = x_train[other_2_tr, :]
-    y_train_other_2 = y_train[other_2_tr]
-    
-    rand = np.random.randint(0, x_train_other_2.shape[0], max_sample_tr)
-    
-    x_train_other_2 = x_train_other_2[rand, :]
-    y_train_other_2 = y_train_other_2[rand]
-    
-    x_train_new = np.concatenate((x_train_class,
-                                  x_train_other_1,
-                                  x_train_other_2))
-    
-    y_train_new = np.concatenate((y_train_class,
-                                  y_train_other_1,
-                                  y_train_other_2))
-    
+if __name__ == '__main__':
     # test
-    x_test_other_1 = x_test[other_1_te, :]
-    y_test_other_1 = y_test[other_1_te]
-    
-    rand = np.random.randint(0, x_test_other_1.shape[0], max_sample_te)
-    
-    x_test_other_1 = x_test_other_1[rand, :]
-    y_test_other_1 = y_test_other_1[rand]
-    
-    x_test_other_2 = x_test[other_2_te, :]
-    y_test_other_2 = y_test[other_2_te]
-    
-    rand = np.random.randint(0, x_test_other_2.shape[0], max_sample_te)
-    
-    x_test_other_2 = x_test_other_2[rand, :]
-    y_test_other_2 = y_test_other_2[rand]
-    
-    x_test_new = np.concatenate((x_test_class,
-                                  x_test_other_1,
-                                  x_test_other_2))
-    
-    y_test_new = np.concatenate((y_test_class,
-                                  y_test_other_1,
-                                  y_test_other_2))
-    
-    
-    return x_train_new, x_test_new, y_train_new, y_test_new
-
-
-
-def deer_classifier(C, kernel, gamma, degree, coef, rel_tol, feas_tol):
     path_train = './datasets/cifar/data_batch_1'
-    path_test = './datasets/cifar/data_batch_5'
+    path_test = './datasets/cifar/data_batch_3'
     
-    # get data (deer, horse, cat) from each train batch and test batch
-    x_train, y_train = get_data(path_train)
-    x_test, y_test = get_data(path_test)
+    x_train, y_train = load.get_data(path_train)
+    x_train, y_train = load.subsample(x_train, y_train, 3)
     
-    # as it takes time we will only take some samples out of each class and 
-    # also create class balance for the 'one vs all'
-    x_train, x_test, y_train, y_test = subsample(x_train, x_test, y_train, y_test, 4)
+    x_test, y_test = load.get_data(path_test)
+    x_test, y_test = load.subsample(x_test, y_test, 3)
     
-    # plot_balance(y_train)
-    # plot_balance(y_test)
+    y_train = load.preprocess(y_train, 3)
     
-    x_train, x_test, y_train, y_test = preprocess(x_train, x_test, y_train, y_test, 4)
+    y_test = load.preprocess(y_test, 3)
     
+    scaler = StandardScaler()
+    scaler.fit(x_train)
+                        
+    x_train = scaler.transform(x_train)
+    x_test = scaler.transform(x_test)
+    
+    kpca = KPCA(n_components=1100, kernel=rbf, gamma=0.0005, 
+                coef=None, degree=None)
+
+    kpca.fit(x_train)
+
+    x_train = kpca.transform(x_train)
+    x_test = kpca.transform(x_test)
+
+    # LDA
     print()
-    print(f"Train set: {(x_train.shape, y_train.shape)}")
-    print(f"Test set: {(x_test.shape, y_test.shape)}")
-    
-    clf = SVMClassifier(C=C, kernel=kernel, gamma=gamma, degree=degree, coef=coef,
-                        rel_tol=rel_tol, feas_tol=feas_tol)
-    
+    print("Running LDA....")
+    lda = LDA(n_components=1)
+    lda.fit(x_train, y_train)
+
+    x_train = lda.transform(x_train)
+    x_test = lda.transform(x_test)
+
+    # SVM
+    print()
+    print("Started SVM.....")
+    clf = SVMClassifier(C=5, kernel=rbf, gamma=0.2, 
+                        degree=None, coef=None)
     clf.fit(x_train, np.expand_dims(y_train, axis=1))
-    
+
     y_pred = clf.predict(x_test)
-    
+
     np.nan_to_num(y_pred, copy=False, nan=0.0)
 
-    f1_mine = f1_score(y_test, y_pred, average='macro')
-    prec_mine = precision_score(y_test, y_pred, average='macro')
-    rec_mine = recall_score(y_test, y_pred, average='macro')
-    
-    return clf, f1_mine, prec_mine, rec_mine
-    
-    
-def horse_classifier(C, kernel, gamma, degree, coef, rel_tol, feas_tol):
-    path_train = './datasets/cifar/data_batch_2'
-    path_test = './datasets/cifar/data_batch_5'
-    
-    # get data (deer, horse, cat) from each train batch and test batch
-    x_train, y_train = get_data(path_train)
-    x_test, y_test = get_data(path_test)
-    
-    # as it takes time we will only take some samples out of each class and 
-    # also create class balance for the 'one vs all'
-    x_train, x_test, y_train, y_test = subsample(x_train, x_test, y_train, y_test, 7)
-    
-    # plot_balance(y_train)
-    # plot_balance(y_test)
-    
-    
-    x_train, x_test, y_train, y_test = preprocess(x_train, x_test, y_train, y_test, 7)
-    
-    print()
-    print(f"Train set: {(x_train.shape, y_train.shape)}")
-    print(f"Test set: {(x_test.shape, y_test.shape)}")
-    
-    clf = SVMClassifier(C=C, kernel=kernel, gamma=gamma, degree=degree, coef=coef,
-                        rel_tol=rel_tol, feas_tol=feas_tol)
-    
-    clf.fit(x_train, np.expand_dims(y_train, axis=1))
-    
-    y_pred = clf.predict(x_test)
-    
-    np.nan_to_num(y_pred, copy=False, nan=0.0)
-    
-    f1_mine = f1_score(y_test, y_pred, average='macro')
-    prec_mine = precision_score(y_test, y_pred, average='macro')
-    rec_mine = recall_score(y_test, y_pred, average='macro')
-    
-    return clf, f1_mine, prec_mine, rec_mine
+    f1_mine = f1_score(y_test, y_pred, average='macro') * 100
+    prec_mine = precision_score(y_test, y_pred, average='macro') * 100
+    rec_mine = recall_score(y_test, y_pred, average='macro') * 100
 
-
-def cat_classifier(C, kernel, gamma, degree, coef, rel_tol, feas_tol):
-    
-    path_train = './datasets/cifar/data_batch_3'
-    path_test = './datasets/cifar/data_batch_5'
-    
-    # get data (deer, horse, cat) from each train batch and test batch
-    x_train, y_train = get_data(path_train)
-    x_test, y_test = get_data(path_test)
-    
-    # as it takes time we will only take some samples out of each class and 
-    # also create class balance for the 'one vs all'
-    x_train, x_test, y_train, y_test = subsample(x_train, x_test, y_train, y_test, 3)
-    
-    # plot_balance(y_train)
-    # plot_balance(y_test)
-    
-    x_train, x_test, y_train, y_test = preprocess(x_train, x_test, y_train, y_test, 3)
-    
     print()
-    print(f"Train set: {(x_train.shape, y_train.shape)}")
-    print(f"Test set: {(x_test.shape, y_test.shape)}")
-    
-    clf = SVMClassifier(C=C, kernel=kernel, gamma=gamma, degree=degree, coef=coef,
-                        rel_tol=rel_tol, feas_tol=feas_tol)
-    
-    clf.fit(x_train, np.expand_dims(y_train, axis=1))
-    
-    y_pred = clf.predict(x_test)
-    
-    np.nan_to_num(y_pred, copy=False, nan=0.0)
-    
-    f1_mine = f1_score(y_test, y_pred, average='macro')
-    prec_mine = precision_score(y_test, y_pred, average='macro')
-    rec_mine = recall_score(y_test, y_pred, average='macro')
+    print("===============")
+    print(f"F1 = {f1_mine}")
+    print(f"Precision = {prec_mine}")
+    print(f"Recall = {rec_mine}")
+    print("===============")
     
     
-    return clf, f1_mine, prec_mine, rec_mine
+    ################# GRID SEARCH #########################
+    # gamma_1 = [0.00001, 0.0001]
+    # n_comp = [1000, 800]
+    
+    # # gamma_2 = [0.01, 0.1, 1]
+    # # degree = [5, 3]
+    # # coef = [-1, 0, 1]
+    # C = [0.1, 1, 10, 100]
+    
+    # f1s = []
+    # precisions = []
+    # recalls = []
+    # params = []
+    
+    # for n in n_comp:
+    #     for g_1 in gamma_1:
+    #         for c in C:
+                        
+    #             path_train = './datasets/cifar/data_batch_1'
+    #             path_val = './datasets/cifar/data_batch_2'
+    #             # path_test = './datasets/cifar/data_batch_3'
+                
+    #             # load train, val and test sets and apply subsampling
+    #             x_train, y_train = load.get_data(path_train)
+    #             x_train, y_train = load.subsample(x_train, y_train, 3)
+                
+    #             x_val, y_val = load.get_data(path_val)
+    #             x_val, y_val = load.subsample(x_val, y_val, 3)
+                
+    #             # x_test, y_test = load.get_data(path_test)
+    #             # x_test, y_test = load.subsample(x_test, y_test, 3)
+                
+    #             # fix labels at -1, 1 (1 for target class -1 for the other two)
+    #             y_train = load.preprocess(y_train, 3)
+    #             y_val = load.preprocess(y_val, 3)
+    #             # y_test = load.preprocess(y_test, 3)
+                
+    #             # scale data
+    #             scaler = StandardScaler()
+    #             scaler.fit(x_train)
+                
+    #             x_train = scaler.transform(x_train)
+    #             x_val = scaler.transform(x_val)
+    #             # x_test = scaler.transform(x_test)
+                
+    #             print()
+    #             print("=========================================")
+    #             print(f"n_components: {n}")
+    #             print(f"gamma_kpca: {g_1}")
+    #             # print(f"gamma_svm: {g_2}")
+    #             # print(f"coef: {cf}")
+    #             print(f"C: {c}")
+    #             print("=========================================")
+                
+    #             params.append((f'n: {n}', f'gamma_kpca: {g_1}', f'C: {c}'))
+                
+    #             # KPCA
+    #             print()
+    #             print("Running KPCA.....")
+    #             kpca = KPCA(n_components=n, kernel=rbf, gamma=g_1, 
+    #                         coef=None, degree=None)
+                
+    #             kpca.fit(x_train)
+                
+    #             x_train = kpca.transform(x_train)
+    #             x_val = kpca.transform(x_val)
+                
+    #             # LDA
+    #             print()
+    #             print("Running LDA....")
+    #             lda = LDA(n_components=1)
+    #             lda.fit(x_train, y_train)
+                
+    #             x_train = lda.transform(x_train)
+    #             x_val = lda.transform(x_val)
+
+    #             # SVM
+    #             print()
+    #             print("Started SVM.....")
+    #             clf = SVMClassifier(C=c, kernel=linear, gamma=None, 
+    #                                 degree=None, coef=None)
+                
+    #             clf.fit(x_train, np.expand_dims(y_train, axis=1))
+
+    #             y_pred = clf.predict(x_val)
+
+    #             np.nan_to_num(y_pred, copy=False, nan=0.0)
+
+    #             f1_mine = f1_score(y_val, y_pred, average='macro') * 100
+    #             prec_mine = precision_score(y_val, y_pred, average='macro') * 100
+    #             rec_mine = recall_score(y_val, y_pred, average='macro') * 100
+                
+    #             print()
+    #             print("===============")
+    #             print(f"F1 = {f1_mine}")
+    #             print(f"Precision = {prec_mine}")
+    #             print(f"Recall = {rec_mine}")
+    #             print("===============")
+                
+                
+    #             f1s.append(f1_mine)
+    #             precisions.append(prec_mine)
+    #             recalls.append(rec_mine)
+    
+    # max_index = f1s.index(max(f1s))
+    
+    # best_f1 = f1s[max_index]
+    # best_prec = precisions[max_index]
+    # best_rec = recalls[max_index]
+    # best_params = params[max_index]
+    
+    # print()
+    # print("======= Best Score ==========")
+    # print(f"F1 = {best_f1}")
+    # print(f"Prec = {best_prec}")
+    # print(f"Rec = {best_rec}")
+    # print(f"Best Params: {best_params}")
+   
+    
+    fig = plt.figure()
+    
+    plt.scatter(x_train[y_train==1], 
+                y=[i/i * 0.2 for i in range(1, x_train[y_train==1].shape[0]+1)])
+    
+    plt.scatter(x_train[y_train==-1], 
+                y=[i*0 for i in range(x_train[y_train==-1].shape[0])])
+    
+    plt.show()
