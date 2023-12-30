@@ -1,6 +1,6 @@
 import numpy as np
 from cvxopt import matrix, solvers
-from kernels import poly, linear, rbf, sigmoid    
+from SVM.kernels import poly, linear, rbf, sigmoid    
 import time
 
 class SVMClassifier():
