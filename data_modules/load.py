@@ -1,8 +1,9 @@
 import numpy as np
+import math
 import sys
 
 sys.path.append('./')
-from data_modules import unpickle
+from data_modules.unpickle import unpickle
 
 
 def get_data(path):
@@ -30,97 +31,44 @@ def get_data(path):
     return new_data, new_labels
 
 
-def preprocess(y_train, y_test, class_id):
+def preprocess(y, class_id):
     # the targer class each time will be assigned to 1
-    y_train[y_train==class_id] = 1
-    y_train[y_train!=1] = -1
+    y[y==class_id] = 1
+    y[y!=1] = -1
     
-    y_train = y_train.astype(np.float64)
+    y = y.astype(np.float64)
     
-    print()
-    print(f"Train labels: {np.unique(y_train)}")
-    
-    y_test[y_test==class_id] = 1
-    y_test[y_test!=1] = -1
-    
-    y_test = y_test.astype(np.float64)
-    
-    print()
-    print(f"Test labels: {np.unique(y_test)}")
-    
-    
-    return y_train, y_test
+    return y
 
 
-def subsample(x_train, y_train, class_id):
+def subsample(x, y, class_id):
     classes = [3, 4, 7]
     classes.remove(class_id)
     
-    target_tr = y_train==class_id
-    # target_te = y_test==class_id
+    target = y==class_id
     
-    max_sample_tr = math.floor(x_train[target_tr, :].shape[0] / 2)
-    # max_sample_te = math.floor(x_test[target_te, :].shape[0] / 2)
+    max_sample = math.floor(x[target, :].shape[0] / 2)
     
-    other_1_tr = y_train==classes[0]
-    other_2_tr = y_train==classes[1]
+    other_1 = y==classes[0]
+    other_2 = y==classes[1]
     
-    # other_1_te = y_test==classes[0]
-    # other_2_te = y_test==classes[1]
+    x_class = x[target, :]
+    y_class = y[target]
     
-    x_train_class = x_train[target_tr, :]
-    # x_test_class = x_test[target_te, :]
-    y_train_class = y_train[target_tr]
-    # y_test_class = y_test[target_te]
+    x_other_1 = x[other_1, :]
+    y_other_1 = y[other_1]
     
-    # train
-    x_train_other_1 = x_train[other_1_tr, :]
-    y_train_other_1 = y_train[other_1_tr]
+    x_other_1 = x_other_1[:max_sample, :]
+    y_other_1 = y_other_1[:max_sample]
     
-    rand = np.random.randint(0, x_train_other_1.shape[0], max_sample_tr)
+    x_other_2 = x[other_2, :]
+    y_other_2 = y[other_2]
     
-    x_train_other_1 = x_train_other_1[rand, :]
-    y_train_other_1 = y_train_other_1[rand]
+    x_other_2 = x_other_2[:max_sample, :]
+    y_other_2 = y_other_2[:max_sample]
     
-    x_train_other_2 = x_train[other_2_tr, :]
-    y_train_other_2 = y_train[other_2_tr]
+    x_new = np.concatenate((x_class, x_other_1, x_other_2))
     
-    rand = np.random.randint(0, x_train_other_2.shape[0], max_sample_tr)
+    y_new = np.concatenate((y_class, y_other_1, y_other_2))
     
-    x_train_other_2 = x_train_other_2[rand, :]
-    y_train_other_2 = y_train_other_2[rand]
-    
-    x_train_new = np.concatenate((x_train_class,
-                                  x_train_other_1,
-                                  x_train_other_2))
-    
-    y_train_new = np.concatenate((y_train_class,
-                                  y_train_other_1,
-                                  y_train_other_2))
-    
-    # test
-    # x_test_other_1 = x_test[other_1_te, :]
-    # y_test_other_1 = y_test[other_1_te]
-    
-    # rand = np.random.randint(0, x_test_other_1.shape[0], max_sample_te)
-    
-    # x_test_other_1 = x_test_other_1[rand, :]
-    # y_test_other_1 = y_test_other_1[rand]
-    
-    # x_test_other_2 = x_test[other_2_te, :]
-    # y_test_other_2 = y_test[other_2_te]
-    
-    # rand = np.random.randint(0, x_test_other_2.shape[0], max_sample_te)
-    
-    # x_test_other_2 = x_test_other_2[rand, :]
-    # y_test_other_2 = y_test_other_2[rand]
-    
-    # x_test_new = np.concatenate((x_test_class,
-    #                               x_test_other_1,
-    #                               x_test_other_2))
-    
-    # y_test_new = np.concatenate((y_test_class,
-    #                               y_test_other_1,
-    #                               y_test_other_2))
-    
-    return x_train_new, y_train_new
+    return x_new, y_new
