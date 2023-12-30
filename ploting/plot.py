@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 import sys
 
 sys.path.append('./')
-from data_modules import unpickle
+from data_modules.unpickle import unpickle
 
 
 def plot_image(array):
@@ -35,7 +35,7 @@ def plot_balance(labels):
    
     fig, ax = plt.subplots()
 
-    colors = ['red', 'brown', 'orange', 'blue']
+    colors = ['red', 'brown', 'orange']
     
     ax.bar(names, counts, color=colors, label=names)
 
