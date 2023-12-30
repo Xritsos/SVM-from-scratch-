@@ -1,297 +1,18 @@
 import numpy as np
-import pickle
-import math
+import time
 from matplotlib import pyplot as plt
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from sklearn.metrics import classification_report, f1_score, precision_score, recall_score
-from sklearn.svm import SVC
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import f1_score, precision_score, recall_score, classification_report
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
-from SVMClassifier import SVMClassifier
-from kernels import poly, linear, rbf, sigmoid
+from data_modules import load
+from ploting import plot
+from SVM.SVMClassifier import SVMClassifier
+from SVM.kernels import linear, rbf, poly, sigmoid
+from dim_reduction.KPCA import KPCA
+from dim_reduction.LDA import LDA
 
-
-def unpickle(file):
-    with open(file, 'rb') as fo:
-        dict = pickle.load(fo, encoding='bytes')
-    return dict
-
-
-def plot_image(array):
-    
-    red = array[:1024].reshape((32, 32))
-    green = array[1024:2048].reshape((32, 32))
-    blue = array[2048:].reshape((32, 32))
-    
-    rgb = np.dstack((red, green, blue))
-    
-    fig = plt.figure()
-    
-    plt.imshow(rgb)
-    
-    plt.show()
-    
-    
-def plot_balance(labels):
-    vals, counts = np.unique(labels, return_counts=True)
-    vals = vals.astype(np.uint8)
-    
-    path_meta = './datasets/cifar/batches.meta'
-    
-    meta = unpickle(path_meta)
-    label_names = meta[b'label_names']
-    
-    names = [label_names[i].decode("utf-8") for i in vals]
-   
-    fig, ax = plt.subplots()
-
-    colors = ['red', 'brown', 'orange', 'blue']
-    
-    ax.bar(names, counts, color=colors, label=names)
-
-    ax.set_ylabel('Counts')
-    ax.set_xlabel('Classes')
-    ax.set_title('Class Balance')
-    ax.legend(title='Targets')
-    
-    plt.show()
-    
-    
-def get_data(path):
-    
-    batch = unpickle(path)
-    
-    data = batch[b'data']
-    labels = np.asarray(batch[b'labels'])
-
-    # we choose only the classes deer horse and cat
-    # deer --> 4, horse --> 7, cat --> 3
-    
-    deer = data[labels==4, :]
-    horse = data[labels==7, :]
-    cat = data[labels==3, :]
-    
-    new_data = np.concatenate((deer, horse, cat))
-    
-    deer_lb = labels[labels==4]
-    horse_lb = labels[labels==7]
-    cat_lb = labels[labels==3]
-    
-    new_labels = np.concatenate((deer_lb, horse_lb, cat_lb))
-    
-    return new_data, new_labels
-
-
-def preprocess(y_train, y_test, class_id):
-    # the targer class each time will be assigned to 1
-    y_train[y_train==class_id] = 1
-    y_train[y_train!=1] = -1
-    
-    y_train = y_train.astype(np.float64)
-    
-    print()
-    print(f"Train labels: {np.unique(y_train)}")
-    
-    y_test[y_test==class_id] = 1
-    y_test[y_test!=1] = -1
-    
-    y_test = y_test.astype(np.float64)
-    
-    print()
-    print(f"Test labels: {np.unique(y_test)}")
-    
-    
-    return y_train, y_test
-
-
-def subsample(x_train, x_test, y_train, y_test, class_id):
-    classes = [3, 4, 7]
-    classes.remove(class_id)
-    
-    target_tr = y_train==class_id
-    target_te = y_test==class_id
-    
-    max_sample_tr = math.floor(x_train[target_tr, :].shape[0] / 2)
-    max_sample_te = math.floor(x_test[target_te, :].shape[0] / 2)
-    
-    other_1_tr = y_train==classes[0]
-    other_2_tr = y_train==classes[1]
-    
-    other_1_te = y_test==classes[0]
-    other_2_te = y_test==classes[1]
-    
-    x_train_class = x_train[target_tr, :]
-    x_test_class = x_test[target_te, :]
-    y_train_class = y_train[target_tr]
-    y_test_class = y_test[target_te]
-    
-    # train
-    x_train_other_1 = x_train[other_1_tr, :]
-    y_train_other_1 = y_train[other_1_tr]
-    
-    rand = np.random.randint(0, x_train_other_1.shape[0], max_sample_tr)
-    
-    x_train_other_1 = x_train_other_1[rand, :]
-    y_train_other_1 = y_train_other_1[rand]
-    
-    x_train_other_2 = x_train[other_2_tr, :]
-    y_train_other_2 = y_train[other_2_tr]
-    
-    rand = np.random.randint(0, x_train_other_2.shape[0], max_sample_tr)
-    
-    x_train_other_2 = x_train_other_2[rand, :]
-    y_train_other_2 = y_train_other_2[rand]
-    
-    x_train_new = np.concatenate((x_train_class,
-                                  x_train_other_1,
-                                  x_train_other_2))
-    
-    y_train_new = np.concatenate((y_train_class,
-                                  y_train_other_1,
-                                  y_train_other_2))
-    
-    # test
-    x_test_other_1 = x_test[other_1_te, :]
-    y_test_other_1 = y_test[other_1_te]
-    
-    rand = np.random.randint(0, x_test_other_1.shape[0], max_sample_te)
-    
-    x_test_other_1 = x_test_other_1[rand, :]
-    y_test_other_1 = y_test_other_1[rand]
-    
-    x_test_other_2 = x_test[other_2_te, :]
-    y_test_other_2 = y_test[other_2_te]
-    
-    rand = np.random.randint(0, x_test_other_2.shape[0], max_sample_te)
-    
-    x_test_other_2 = x_test_other_2[rand, :]
-    y_test_other_2 = y_test_other_2[rand]
-    
-    x_test_new = np.concatenate((x_test_class,
-                                  x_test_other_1,
-                                  x_test_other_2))
-    
-    y_test_new = np.concatenate((y_test_class,
-                                  y_test_other_1,
-                                  y_test_other_2))
-    
-    
-    return x_train_new, x_test_new, y_train_new, y_test_new
-
-
-
-def deer_classifier(C, kernel, gamma, degree, coef, rel_tol, feas_tol):
-    path_train = './datasets/cifar/data_batch_1'
-    path_test = './datasets/cifar/data_batch_5'
-    
-    # get data (deer, horse, cat) from each train batch and test batch
-    x_train, y_train = get_data(path_train)
-    x_test, y_test = get_data(path_test)
-    
-    # as it takes time we will only take some samples out of each class and 
-    # also create class balance for the 'one vs all'
-    x_train, x_test, y_train, y_test = subsample(x_train, x_test, y_train, y_test, 4)
-    
-    # plot_balance(y_train)
-    # plot_balance(y_test)
-    
-    x_train, x_test, y_train, y_test = preprocess(x_train, x_test, y_train, y_test, 4)
-    
-    print()
-    print(f"Train set: {(x_train.shape, y_train.shape)}")
-    print(f"Test set: {(x_test.shape, y_test.shape)}")
-    
-    clf = SVMClassifier(C=C, kernel=kernel, gamma=gamma, degree=degree, coef=coef,
-                        rel_tol=rel_tol, feas_tol=feas_tol)
-    
-    clf.fit(x_train, np.expand_dims(y_train, axis=1))
-    
-    y_pred = clf.predict(x_test)
-    
-    np.nan_to_num(y_pred, copy=False, nan=0.0)
-
-    f1_mine = f1_score(y_test, y_pred, average='macro')
-    prec_mine = precision_score(y_test, y_pred, average='macro')
-    rec_mine = recall_score(y_test, y_pred, average='macro')
-    
-    return clf, f1_mine, prec_mine, rec_mine
-    
-    
-def horse_classifier(C, kernel, gamma, degree, coef, rel_tol, feas_tol):
-    path_train = './datasets/cifar/data_batch_2'
-    path_test = './datasets/cifar/data_batch_5'
-    
-    # get data (deer, horse, cat) from each train batch and test batch
-    x_train, y_train = get_data(path_train)
-    x_test, y_test = get_data(path_test)
-    
-    # as it takes time we will only take some samples out of each class and 
-    # also create class balance for the 'one vs all'
-    x_train, x_test, y_train, y_test = subsample(x_train, x_test, y_train, y_test, 7)
-    
-    # plot_balance(y_train)
-    # plot_balance(y_test)
-    
-    
-    x_train, x_test, y_train, y_test = preprocess(x_train, x_test, y_train, y_test, 7)
-    
-    print()
-    print(f"Train set: {(x_train.shape, y_train.shape)}")
-    print(f"Test set: {(x_test.shape, y_test.shape)}")
-    
-    clf = SVMClassifier(C=C, kernel=kernel, gamma=gamma, degree=degree, coef=coef,
-                        rel_tol=rel_tol, feas_tol=feas_tol)
-    
-    clf.fit(x_train, np.expand_dims(y_train, axis=1))
-    
-    y_pred = clf.predict(x_test)
-    
-    np.nan_to_num(y_pred, copy=False, nan=0.0)
-    
-    f1_mine = f1_score(y_test, y_pred, average='macro')
-    prec_mine = precision_score(y_test, y_pred, average='macro')
-    rec_mine = recall_score(y_test, y_pred, average='macro')
-    
-    return clf, f1_mine, prec_mine, rec_mine
-
-
-def cat_classifier(C, kernel, gamma, degree, coef, rel_tol, feas_tol):
-    
-    path_train = './datasets/cifar/data_batch_3'
-    path_test = './datasets/cifar/data_batch_5'
-    
-    # get data (deer, horse, cat) from each train batch and test batch
-    x_train, y_train = get_data(path_train)
-    x_test, y_test = get_data(path_test)
-    
-    # as it takes time we will only take some samples out of each class and 
-    # also create class balance for the 'one vs all'
-    x_train, x_test, y_train, y_test = subsample(x_train, x_test, y_train, y_test, 3)
-    
-    # plot_balance(y_train)
-    # plot_balance(y_test)
-    
-    x_train, x_test, y_train, y_test = preprocess(x_train, x_test, y_train, y_test, 3)
-    
-    print()
-    print(f"Train set: {(x_train.shape, y_train.shape)}")
-    print(f"Test set: {(x_test.shape, y_test.shape)}")
-    
-    clf = SVMClassifier(C=C, kernel=kernel, gamma=gamma, degree=degree, coef=coef,
-                        rel_tol=rel_tol, feas_tol=feas_tol)
-    
-    clf.fit(x_train, np.expand_dims(y_train, axis=1))
-    
-    y_pred = clf.predict(x_test)
-    
-    np.nan_to_num(y_pred, copy=False, nan=0.0)
-    
-    f1_mine = f1_score(y_test, y_pred, average='macro')
-    prec_mine = precision_score(y_test, y_pred, average='macro')
-    rec_mine = recall_score(y_test, y_pred, average='macro')
-    
-    
-    return clf, f1_mine, prec_mine, rec_mine
 
 
 def combine():
@@ -299,20 +20,22 @@ def combine():
     path_train_4 = './datasets/cifar/data_batch_4'
     path_train_3 = './datasets/cifar/data_batch_3'
     path_train_2 = './datasets/cifar/data_batch_2'
-    # path_train_1 = './datasets/cifar/data_batch_1'
     path_test = './datasets/cifar/test_batch'
     
-    x_train_5, y_train_5 = get_data(path_train_5)
-    x_train_4, y_train_4 = get_data(path_train_4)
-    x_train_3, y_train_3 = get_data(path_train_3)
-    x_train_2, y_train_2 = get_data(path_train_2)
-    # x_train_1, y_train_1 = get_data(path_train_1)
+    x_train_5, y_train_5 = load.get_data(path_train_5)
+    x_train_4, y_train_4 = load.get_data(path_train_4)
+    x_train_3, y_train_3 = load.get_data(path_train_3)
+    x_train_2, y_train_2 = load.get_data(path_train_2)
     
     x_train = np.concatenate((x_train_5, x_train_4, x_train_3, x_train_2))
     y_train = np.concatenate((y_train_5, y_train_4, y_train_3, y_train_2))
+    #x_train, y_train = load.get_data(path_train_5)
     
-    # x_train, y_train = get_data(path_train_5)
-    x_test, y_test = get_data(path_test)
+    x_test, y_test = load.get_data(path_test)
+    
+    print()
+    print(f"X train: {x_train.shape}")
+    print(f"X test: {x_test.shape}")
     
     scaler = StandardScaler()
     scaler.fit(x_train)
@@ -320,24 +43,66 @@ def combine():
     x_train = scaler.transform(x_train)
     x_test = scaler.transform(x_test)
     
+    start = time.time()
+    
+    kpca = KPCA(n_components=1100, kernel=rbf, gamma=0.0005)
+    kpca.fit(x_train)
+    
+    x_train = kpca.transform(x_train)
+    x_test = kpca.transform(x_test)
+    
+    end = time.time()
+    
     print()
-    print(f"X train: {x_train.shape}")
-    print(f"X test: {x_test.shape}")
+    print(f"KPCA: samples - {x_train.shape} time: {end-start} sec.")
     
-    x_train_d, x_test_d, y_train_d, y_test_d = subsample(x_train, x_test, 
-                                                         y_train, y_test, 4)
+    start = time.time()
     
-    x_train_h, x_test_h, y_train_h, y_test_h = subsample(x_train, x_test,
-                                                         y_train, y_test, 7)
+    lda = LDA(n_components=2)
+    lda.fit(x_train, y_train)
     
-    x_train_c, x_test_c, y_train_c, y_test_c = subsample(x_train, x_test, 
-                                                         y_train, y_test, 3)
+    x_train = lda.transform(x_train)
+    x_test = lda.transform(x_test)
     
-    y_train_d, y_test_d = preprocess(y_train_d, y_test_d, 4)
+    end = time.time()
+    print(f"LDA: samples - {x_train.shape} time: {end-start} sec.")
     
-    y_train_h, y_test_h = preprocess(y_train_h, y_test_h, 7)
+    fig = plt.figure()
     
-    y_train_c, y_test_c = preprocess(y_train_c, y_test_c, 3)
+    plt.scatter(x_train[:, 0][y_train==3], x_train[:, 1][y_train==3])
+    plt.scatter(x_train[:, 0][y_train==4], x_train[:, 1][y_train==4])
+    plt.scatter(x_train[:, 0][y_train==7], x_train[:, 1][y_train==7])
+    
+    plt.show()
+    
+    x_train_d, y_train_d = load.subsample(x_train, y_train, 4)
+    x_test_d, y_test_d = load.subsample(x_test, y_test, 4)
+    
+    x_train_h, y_train_h = load.subsample(x_train, y_train, 7)
+    x_test_h, y_test_h = load.subsample(x_test, y_test, 7)
+    
+    x_train_c, y_train_c = load.subsample(x_train, y_train, 3)
+    x_test_c, y_test_c = load.subsample(x_test, y_test, 3)
+    
+    # plot.plot_balance(y_train_d)
+    # plot.plot_balance(y_test_d)
+    
+    # plot.plot_balance(y_train_h)
+    # plot.plot_balance(y_test_h)
+    
+    # plot.plot_balance(y_train_c)
+    # plot.plot_balance(y_test_c)
+    
+    
+    y_train_d = load.preprocess(y_train_d, 4)
+    y_test_d = load.preprocess(y_test_d, 4)
+    
+    y_train_h = load.preprocess(y_train_h, 7)
+    y_test_h = load.preprocess(y_test_h, 7)
+    
+    y_train_c = load.preprocess(y_train_c, 3)
+    y_test_c = load.preprocess(y_test_c, 3)
+    
     
     print()
     print("Deer Classifier")
@@ -351,24 +116,21 @@ def combine():
     print("Cat Classifier")
     print(x_train_c.shape, x_test_c.shape)
     
-    clf_deer = SVMClassifier(C=100, kernel=rbf, gamma=0.001, degree=1, coef=0,
-                            rel_tol=1e-6, feas_tol=1e-7)
+    
+    clf_deer = SVMClassifier(C=5, kernel=rbf, gamma=0.2, degree=None, coef=None)
     
     clf_deer.fit(x_train_d, np.expand_dims(y_train_d, axis=1))
     
     
-    clf_horse = SVMClassifier(C=100, kernel=rbf, gamma=0.0005, degree=1, coef=0,
-                            rel_tol=1e-6, feas_tol=1e-7)
+    clf_horse = SVMClassifier(C=5, kernel=rbf, gamma=0.2, degree=None, coef=None)
     
     clf_horse.fit(x_train_h, np.expand_dims(y_train_h, axis=1))
     
     
-    clf_cat = SVMClassifier(C=100, kernel=rbf, gamma=0.0005, degree=1, coef=0,
-                            rel_tol=1e-6, feas_tol=1e-7)
+    clf_cat = SVMClassifier(C=5, kernel=rbf, gamma=0.2, degree=None, coef=None)
     
     clf_cat.fit(x_train_c, np.expand_dims(y_train_c, axis=1))
     
-    # test each individual scores
     
     y_pred_deer = clf_deer.predict(x_test_d)
     y_pred_horse = clf_horse.predict(x_test_h)
@@ -416,23 +178,16 @@ def combine():
     print(f"Recall: {rec_cat}")
     print("=================================")
     
-    
-    # Combine and test them in whole
-    
-    plot_balance(y_train)
-    plot_balance(y_test)
-    
     result = np.zeros((y_test.shape))
     
     deer_pred = clf_deer.predict(x_test)
     horse_pred = clf_horse.predict(x_test)
     cat_pred = clf_cat.predict(x_test)
-    
+  
     deer_pred[deer_pred==1] = 4
     horse_pred[horse_pred==1] = 7
     cat_pred[cat_pred==1] = 3
     
-   
     result = deer_pred + horse_pred + cat_pred
     result[result==2] = 4
     result[result==5] = 7
